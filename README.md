@@ -2,9 +2,11 @@
 
 ## Install package
 
+```bash
 npm i docusaurus-quasiris-search
+```
 
-## usage package
+## Usage package
 
 In your Docusaurus project:
 
