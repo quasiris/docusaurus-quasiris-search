@@ -10,7 +10,7 @@ In your Docusaurus project:
 
 1. Add search plugin to docusaurus.config.js file:
 
-```
+```javascript
 plugins: [
     [
       'docusaurus-quasiris-search',
@@ -24,7 +24,7 @@ plugins: [
 
 2. Swizzle the Navbar/Content component to add your SearchBar directly into the navbar's layout.
 
-```
+```bash
 npm run swizzle @docusaurus/theme-classic Navbar/Content -- --wrap
 ```
 
@@ -33,7 +33,7 @@ This will create a Navbar/Content component in your src/theme directory.
 3. Update the Navbar/Content component to include your SearchBar in the top-right corner.
 
 Here's how your src/theme/Navbar/Content/index.tsx should look:
-```
+```javascript
 import React from 'react';
 import Content from '@theme-original/Navbar/Content';
 import SearchBar from 'docusaurus-quasiris-search/SearchBar';
@@ -64,7 +64,7 @@ If the SearchBar doesn't align perfectly, you may need to adjust its styles. For
 
 Add the following to your src/css/custom.css:
 
-```html
+```css
 .navbar__search-container {
   display: flex;
   align-items: center;
