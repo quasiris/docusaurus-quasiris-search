@@ -55,6 +55,9 @@ export default function SearchBar({ apiEndpoint,indexName }) {
   const handleSearch = (e) => {
     setQuery(e.target.value);
   };
+  const handleRedirect = (link) => {
+    window.location.href = link;
+  };
 
   return (
     <div ref={searchContainerRef} className={styles.searchContainer}>
@@ -76,7 +79,8 @@ export default function SearchBar({ apiEndpoint,indexName }) {
       {isResultsVisible && results.length > 0 && (
         <ul className={styles.searchResults}>
           {results.map((result) => (
-            <li key={result.id}>
+            <li  onClick={() => handleRedirect(result?.document.url)} 
+            key={result.id}>
               <Link to={result?.document.url} target="_self">
                 <strong>{result.document.title || result.id}</strong>
               </Link>
