@@ -18,7 +18,8 @@ plugins: [
       'docusaurus-quasiris-search',
       {
         apiEndpoint: 'YOUR_API_URL',
-        indexName: 'YOUR_INDEX_NAME',
+        apiKey: 'YOUR_API_KEY',
+        searchParameters: {},
       },
     ],
   ],
@@ -43,17 +44,18 @@ import { usePluginData } from '@docusaurus/useGlobalData';
 
 interface PluginData {
   apiEndpoint: string;
-  indexName: string;
+  apiKey: string;
+  searchParameters: {};
 }
 
 export default function ContentWrapper(props) {
-  const { apiEndpoint,indexName } = usePluginData('docusaurus-quasiris-search') as PluginData;
+  const { apiEndpoint,apiKey,searchParameters } = usePluginData('docusaurus-quasiris-search') as PluginData;
 
   return (
     <>
       <Content {...props} />
       <div className="navbar__search-container">
-        <SearchBar apiEndpoint={apiEndpoint} indexName={indexName} />
+        <SearchBar apiEndpoint={apiEndpoint} apiKey={apiKey} searchParams={searchParameters} />
       </div>
     </>
   );

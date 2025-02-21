@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { useDebounce } from 'use-debounce';
 import styles from './custom.module.css';
 
-export default function SearchBar({ apiEndpoint,indexName }) {
+export default function SearchBar({ apiEndpoint,apiKey,searchParams = {} }) {
   const [query, setQuery] = useState('');
   const [debouncedQuery] = useDebounce(query, 300);
   const [results, setResults] = useState([]);
@@ -33,11 +33,15 @@ export default function SearchBar({ apiEndpoint,indexName }) {
       setError(null);
       const fetchResults = async () => {
         try {
+          const params = new URLSearchParams({
+            q: debouncedQuery,
+            ...searchParams,
+          });
           const response = await fetch(
-            `${apiEndpoint}?q=${debouncedQuery}`
+             `${apiEndpoint}?${params.toString()}`
           );
           const data = await response.json();
-          setResults(data.result[indexName].documents || []);
+          setResults(data.result[apiKey].documents || []);
           setIsResultsVisible(true);
         } catch (error) {
           setError('Error fetching search results.');
@@ -50,7 +54,7 @@ export default function SearchBar({ apiEndpoint,indexName }) {
       setResults([]);
       setIsResultsVisible(false);
     }
-  }, [debouncedQuery, apiEndpoint]);
+  }, [debouncedQuery, apiEndpoint,searchParams]);
 
   const handleSearch = (e) => {
     setQuery(e.target.value);
