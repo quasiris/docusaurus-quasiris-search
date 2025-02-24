@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { useDebounce } from 'use-debounce';
 import styles from './custom.module.css';
 
-export default function SearchBar({ apiEndpoint,apiKey,searchParams = {} }) {
+export default function SearchBar({ apiEndpoint,apiKey,searchParameters = {} }) {
   const [query, setQuery] = useState('');
   const [debouncedQuery] = useDebounce(query, 300);
   const [results, setResults] = useState([]);
@@ -35,7 +35,7 @@ export default function SearchBar({ apiEndpoint,apiKey,searchParams = {} }) {
         try {
           const params = new URLSearchParams({
             q: debouncedQuery,
-            ...searchParams,
+            ...searchParameters,
           });
           const response = await fetch(
              `${apiEndpoint}?${params.toString()}`
@@ -54,7 +54,7 @@ export default function SearchBar({ apiEndpoint,apiKey,searchParams = {} }) {
       setResults([]);
       setIsResultsVisible(false);
     }
-  }, [debouncedQuery, apiEndpoint,searchParams]);
+  }, [debouncedQuery, apiEndpoint,searchParameters]);
 
   const handleSearch = (e) => {
     setQuery(e.target.value);

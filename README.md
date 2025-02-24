@@ -19,7 +19,10 @@ plugins: [
       {
         apiEndpoint: 'YOUR_API_URL',
         apiKey: 'YOUR_API_KEY',
-        searchParameters: {},
+        //Optional
+        searchParameters: {
+          // your search parameters
+        },
       },
     ],
   ],
@@ -55,7 +58,7 @@ export default function ContentWrapper(props) {
     <>
       <Content {...props} />
       <div className="navbar__search-container">
-        <SearchBar apiEndpoint={apiEndpoint} apiKey={apiKey} searchParams={searchParameters} />
+        <SearchBar apiEndpoint={apiEndpoint} apiKey={apiKey} searchParameters={searchParameters} />
       </div>
     </>
   );
