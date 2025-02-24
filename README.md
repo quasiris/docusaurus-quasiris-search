@@ -75,3 +75,37 @@ Add the following to your src/css/custom.css:
   margin-left: auto;
 }
 ```
+  5. Customize Styles:
+
+Override CSS variables or target global classes in your project's src/css/custom.css.
+
+```css
+
+/* global plugin overrides */
+.qsc-search-container{
+  --search-container-padding: 2rem;
+  --search-container-width: 400px;
+}
+
+/* search input overrides */
+.qsc-search-input{
+  color: #850000;
+}
+
+/* light theme overrides */
+[data-theme='light'] .qsc-search-container {
+  --search-results-background-color: #25b1bb; 
+  --search-result-hover-color: #9c9c9c; 
+  --search-input-border-color: #4e3bf6; 
+  --search-input-border:1px solid #4e3bf6;
+  --search-results-border-color: #850000;
+}
+
+/* Dark theme overrides */
+[data-theme='dark'] .qsc-search-container {
+  --search-results-background-color: #700e0e; 
+  --search-result-hover-color: #25b1bb; 
+  --search-input-border-color: #3b82f6; 
+  --search-results-border-color: #2d2d2d; 
+}
+```

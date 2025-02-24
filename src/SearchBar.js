@@ -64,10 +64,10 @@ export default function SearchBar({ apiEndpoint,apiKey,searchParams = {} }) {
   };
 
   return (
-    <div ref={searchContainerRef} className={styles.searchContainer}>
+    <div ref={searchContainerRef} className={`${styles.searchContainer} qsc-search-container`}>
       <input
         type="text"
-        className={clsx('navbar__search-input', styles.searchInput)}
+        className={`${clsx('navbar__search-input', styles.searchInput)} qsc-search-input`}
         placeholder="Search documentation..."
         value={query}
         onChange={handleSearch}
