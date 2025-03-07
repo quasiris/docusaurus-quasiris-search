@@ -1,11 +1,14 @@
 {
-    "name": "docusaurus-quasiris-search",
-    "version": "1.2.4",
+    "name": "@quasiris/docusaurus-qsc-search",
+    "version": "1.2.5",
     "description": "Quasiris search bar plugin for Docusaurus.",
     "main": "index.js",
     "exports": {
-        ".": "./index.js",            
-        "./SearchBar": "./src/SearchBar.js"  
+        ".": "./index.js",
+        "./SearchBar": "./src/SearchBar.js"
+    },
+    "publishConfig": {
+        "access": "public"
     },
     "scripts": {
         "build": "babel src --out-dir dist --extensions \".js,.jsx\"",

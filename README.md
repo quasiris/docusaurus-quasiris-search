@@ -1,9 +1,9 @@
-# docusaurus-quasiris-search
+# @quasiris/docusaurus-qsc-search
 
 ## Install package
 
 ```bash
-npm i docusaurus-quasiris-search
+npm i @quasiris/docusaurus-qsc-search
 ```
 
 ## Usage package
@@ -15,7 +15,7 @@ In your Docusaurus project:
 ```javascript
 plugins: [
     [
-      'docusaurus-quasiris-search',
+      '@quasiris/docusaurus-qsc-search',
       {
         apiEndpoint: 'YOUR_API_URL',
         apiKey: 'YOUR_API_KEY',
@@ -42,7 +42,7 @@ Here's how your src/theme/Navbar/Content/index.tsx should look:
 ```javascript
 import React from 'react';
 import Content from '@theme-original/Navbar/Content';
-import SearchBar from 'docusaurus-quasiris-search/SearchBar';
+import SearchBar from '@quasiris/docusaurus-qsc-search/SearchBar';
 import { usePluginData } from '@docusaurus/useGlobalData';
 
 interface PluginData {
@@ -52,7 +52,7 @@ interface PluginData {
 }
 
 export default function ContentWrapper(props) {
-  const { apiEndpoint,apiKey,searchParameters } = usePluginData('docusaurus-quasiris-search') as PluginData;
+  const { apiEndpoint,apiKey,searchParameters } = usePluginData('@quasiris/docusaurus-qsc-search') as PluginData;
 
   return (
     <>
@@ -78,7 +78,7 @@ Add the following to your src/css/custom.css:
   margin-left: auto;
 }
 ```
-  5. Customize Styles:
+5. Customize Styles:
 
 Override CSS variables or target global classes in your project's src/css/custom.css.
 
