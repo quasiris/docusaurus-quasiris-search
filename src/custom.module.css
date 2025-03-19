@@ -12,6 +12,15 @@
     font-size: 1rem;
     transition: all 0.2s ease;
 }
+.selectedItem {
+    background-color: var(--search-result-hover-color, var(--ifm-color-emphasis-300));
+ }
+.highlight {
+    font-weight: bold;
+    background-color: rgba(255, 225, 0, 0.2);
+    border-radius: 2px;
+    padding: 0 2px;
+}
 .searchResults {
     position: absolute;
     width: 95%;
@@ -36,5 +45,5 @@
     text-decoration: none;
 }
 .searchResults li:hover {
-    background-color: var(--search-result-hover-color, var(--ifm-color-emphasis-200));
+    background-color: var(--search-result-hover-color, var(--ifm-color-emphasis-300));
 }
