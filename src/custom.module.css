@@ -2,7 +2,6 @@
     margin-left: auto;
     padding: var(--search-container-padding, 1rem); 
     position: relative;
-    width: var(--search-container-width, 300px);
 }
 .searchInput {
     width: 100%;
