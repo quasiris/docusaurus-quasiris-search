@@ -1,5 +1,4 @@
 .searchContainer {
-    margin-left: auto;
     padding: var(--search-container-padding, 1rem); 
     position: relative;
 }

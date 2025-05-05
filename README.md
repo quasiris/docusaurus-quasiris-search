@@ -75,7 +75,23 @@ Add the following to your src/css/custom.css:
 .navbar__search-container {
   display: flex;
   align-items: center;
-  margin-left: auto;
+}
+
+@media (max-width: 568px) {
+  .navbar--fixed-top {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    box-sizing: border-box; 
+    height: auto;
+  }
+
+  .navbar__search-container {
+    justify-content: center; 
+  }
+  .navbar__inner {
+    position: relative !important;
+  }
 }
 ```
 5. Customize Styles:
