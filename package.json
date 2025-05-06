@@ -1,6 +1,6 @@
 {
     "name": "@quasiris/docusaurus-qsc-search",
-    "version": "1.3.1",
+    "version": "1.3.2",
     "description": "Quasiris search bar plugin for Docusaurus.",
     "main": "index.js",
     "exports": {

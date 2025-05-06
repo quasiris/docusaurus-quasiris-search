@@ -45,3 +45,6 @@
 .searchResults li:hover {
     background-color: var(--search-result-hover-color, var(--ifm-color-emphasis-300));
 }
+.navbar__search-input{
+    width: 100% !important;
+}
