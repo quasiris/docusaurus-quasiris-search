@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { useDebounce } from 'use-debounce';
 import styles from './custom.module.css';
 
-export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {} }) {
+export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {},resultPage=false }) {
   const [query, setQuery] = useState('');
   const [debouncedQuery] = useDebounce(query, 300);
   const [results, setResults] = useState([]);
@@ -13,7 +13,20 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {} }
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchContainerRef = useRef(null);
   const resultsListRef = useRef(null);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [initializedFromURL, setInitializedFromURL] = useState(false);
+  const isSearchRoute = window.location.pathname === '/search';
 
+  useEffect(() => {
+    // Get initial query from URL when component mounts
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialQuery = urlParams.get('query') || '';
+    
+    if (initialQuery) {
+      setQuery(initialQuery);
+      setInitializedFromURL(true);
+    }
+  }, []);
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -24,7 +37,6 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {} }
         setSelectedIndex(-1);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -32,6 +44,10 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {} }
   }, []);
 
   useEffect(() => {
+    if (isSearchRoute && initializedFromURL) {
+      setInitializedFromURL(false); 
+      return;
+    }
     if (debouncedQuery.trim().length > 1) {
       setError(null);
       const fetchResults = async () => {
@@ -45,7 +61,7 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {} }
           const newResults = data.result[apiKey].documents || [];
           setResults(newResults);
           setSelectedIndex(newResults.length > 0 ? 0 : -1);
-          setIsResultsVisible(true);
+          setIsResultsVisible(inputFocused && newResults.length > 0);
         } catch (error) {
           setError('Error fetching search results.');
           setIsResultsVisible(false);
@@ -58,7 +74,7 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {} }
       setIsResultsVisible(false);
       setSelectedIndex(-1);
     }
-  }, [debouncedQuery, apiEndpoint, searchParameters]);
+  }, [debouncedQuery, apiEndpoint, searchParameters, inputFocused, isSearchRoute, initializedFromURL]);
 
   useEffect(() => {
     if (selectedIndex >= 0 && resultsListRef.current) {
@@ -72,12 +88,21 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {} }
     }
   }, [selectedIndex]);
 
+  const handleInputFocus = () => {
+    if (initializedFromURL) setInitializedFromURL(false);
+    setInputFocused(true);
+    if (results.length > 0) setIsResultsVisible(true);
+  };
   const handleSearch = (e) => {
+    if (initializedFromURL) setInitializedFromURL(false);
     setQuery(e.target.value);
   };
 
   const handleRedirect = (link) => {
     window.location.href = link;
+  }; 
+  const handleRedirectToSearchResultPage = (query) => {
+    window.location.href = `/search?query=${encodeURIComponent(query)}`;
   };
   const highlightMatches = (text) => {
     if (!query.trim()) return text;
@@ -105,6 +130,21 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {} }
       )
     );
   };
+  const handleSearchSubmit = () => {
+    if (query.trim()) {
+      if (resultPage) {
+        handleRedirectToSearchResultPage(query);
+      } else {
+        // Mirror the Enter key behavior for non-result pages
+        if (selectedIndex >= 0 && selectedIndex < results.length) {
+          handleRedirect(results[selectedIndex].document.url);
+        } else {
+          // If no selection but has query, go to search results page
+          handleRedirectToSearchResultPage(query);
+        }
+      }
+    }
+  };
   const handleKeyDown = (e) => {
     if (!isResultsVisible || results.length === 0) return;
 
@@ -122,7 +162,9 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {} }
         });
         break;
       case 'Enter':
-        if (selectedIndex >= 0 && selectedIndex < results.length) {
+        if(resultPage){
+          handleRedirectToSearchResultPage(query);
+        }else if (selectedIndex >= 0 && selectedIndex < results.length) {
           const url = results[selectedIndex].document.url;
           handleRedirect(url);
         }
@@ -134,20 +176,25 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {} }
 
   return (
     <div ref={searchContainerRef} className={`${styles.searchContainer} qsc-search-container`}>
-      <input
-        type="text"
-        className={`${clsx('navbar__search-input', styles.searchInput)} qsc-search-input`}
-        placeholder="Search documentation..."
-        value={query}
-        onChange={handleSearch}
-        onKeyDown={handleKeyDown}
-        onFocus={() => {
-          if (results.length > 0) {
-            setIsResultsVisible(true);
-          }
-        }}
-      />
-
+      <div className={styles.inputWrapper}>
+         <input
+          type="text"
+          className={`${clsx(styles.searchInput)} qsc-search-input`}
+          placeholder="Search documentation..."
+          value={query}
+          onChange={handleSearch}
+          onKeyDown={handleKeyDown}
+          onFocus={handleInputFocus}
+          onBlur={() => setInputFocused(false)}
+        />
+        <button
+          className={styles.searchIcon}
+          onClick={handleSearchSubmit}
+          aria-label="Search"
+          type="button"
+        />
+      </div>
+     
       {error && <p>{error}</p>}
 
       {isResultsVisible && results.length > 0 && (
