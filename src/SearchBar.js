@@ -3,28 +3,31 @@ import Link from '@docusaurus/Link';
 import clsx from 'clsx';
 import { useDebounce } from 'use-debounce';
 import styles from './custom.module.css';
+import ExecutionEnvironment from '@docusaurus/ExecutionEnvironment';
 
 export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {},resultPage=false }) {
   const [query, setQuery] = useState('');
   const [debouncedQuery] = useDebounce(query, 300);
   const [results, setResults] = useState([]);
-  const [error, setError] = useState(null);
   const [isResultsVisible, setIsResultsVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchContainerRef = useRef(null);
   const resultsListRef = useRef(null);
   const [inputFocused, setInputFocused] = useState(false);
   const [initializedFromURL, setInitializedFromURL] = useState(false);
-  const isSearchRoute = window.location.pathname === '/search';
-
+  const isSearchRoute = ExecutionEnvironment.canUseDOM 
+    ? window.location.pathname === '/search'
+    : false;
   useEffect(() => {
     // Get initial query from URL when component mounts
-    const urlParams = new URLSearchParams(window.location.search);
-    const initialQuery = urlParams.get('query') || '';
-    
-    if (initialQuery) {
-      setQuery(initialQuery);
-      setInitializedFromURL(true);
+    if (ExecutionEnvironment.canUseDOM) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialQuery = urlParams.get('query') || '';
+      
+      if (initialQuery) {
+        setQuery(initialQuery);
+        setInitializedFromURL(true);
+      }
     }
   }, []);
   useEffect(() => {
@@ -49,7 +52,6 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {},r
       return;
     }
     if (debouncedQuery.trim().length > 1) {
-      setError(null);
       const fetchResults = async () => {
         try {
           const params = new URLSearchParams({
@@ -63,7 +65,6 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {},r
           setSelectedIndex(newResults.length > 0 ? 0 : -1);
           setIsResultsVisible(inputFocused && newResults.length > 0);
         } catch (error) {
-          setError('Error fetching search results.');
           setIsResultsVisible(false);
         }
       };
@@ -99,10 +100,14 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {},r
   };
 
   const handleRedirect = (link) => {
-    window.location.href = link;
+    if (ExecutionEnvironment.canUseDOM) {
+      window.location.href = link;
+    }
   }; 
   const handleRedirectToSearchResultPage = (query) => {
-    window.location.href = `/search?query=${encodeURIComponent(query)}`;
+    if (ExecutionEnvironment.canUseDOM) {
+      window.location.href = `/search?query=${encodeURIComponent(query)}`;
+    }
   };
   const highlightMatches = (text) => {
     if (!query.trim()) return text;
@@ -195,8 +200,6 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {},r
         />
       </div>
      
-      {error && <p>{error}</p>}
-
       {isResultsVisible && results.length > 0 && (
         <ul ref={resultsListRef} className={styles.searchResults}>
           {results.map((result, index) => (
