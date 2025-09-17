@@ -18,7 +18,8 @@ plugins: [
       '@quasiris/docusaurus-qsc-search',
       {
         apiEndpoint: 'YOUR_API_URL',
-        apiKey: 'YOUR_API_KEY',
+        suggestEndpoint: 'YOUR_SUGGESTS_API_URL',
+        resultKey: 'YOUR_RESULTS_KEY',
         //Optional
         searchParameters: {
           // your search parameters
@@ -46,19 +47,19 @@ import SearchBar from '@quasiris/docusaurus-qsc-search/SearchBar';
 import { usePluginData } from '@docusaurus/useGlobalData';
 
 interface PluginData {
-  apiEndpoint: string;
-  apiKey: string;
+  suggestEndpoint: string;
+  resultKey: string;
   searchParameters: {};
 }
 
 export default function ContentWrapper(props) {
-  const { apiEndpoint,apiKey,searchParameters } = usePluginData('@quasiris/docusaurus-qsc-search') as PluginData;
+  const { suggestEndpoint,resultKey,searchParameters } = usePluginData('@quasiris/docusaurus-qsc-search') as PluginData;
 
   return (
     <>
       <Content {...props} />
       <div className="navbar__search-container">
-        <SearchBar apiEndpoint={apiEndpoint} apiKey={apiKey} searchParameters={searchParameters} />
+        <SearchBar suggestEndpoint={suggestEndpoint} resultKey={resultKey} searchParameters={searchParameters} />
       </div>
     </>
   );
@@ -69,7 +70,7 @@ export default function ContentWrapper(props) {
 Here's how your src/theme/Navbar/Content/index.tsx should look:
 ```javascript
 export default function ContentWrapper(props) {
-  const { apiEndpoint, apiKey, searchParameters } = usePluginData('@quasiris/docusaurus-qsc-search') as PluginData;
+  const { suggestEndpoint, resultKey, searchParameters } = usePluginData('@quasiris/docusaurus-qsc-search') as PluginData;
   const windowSize = useWindowSize();
 
   const searchContainerClass = windowSize === 'desktop' ? 'desktop-search' : 'mobile-search';
@@ -79,7 +80,8 @@ export default function ContentWrapper(props) {
       <div className={`navbar__search-container ${searchContainerClass}`}>
         <SearchBar 
           apiEndpoint={apiEndpoint}
-          apiKey={apiKey}
+          suggestEndpoint={suggestEndpoint}
+          resultKey={resultKey}
           resultPage={true}
           searchParameters={searchParameters}
         />
@@ -97,7 +99,8 @@ Setting the resultPage prop to true in the SearchBar component:
 ```javascript
 <SearchBar 
   apiEndpoint={apiEndpoint}
-  apiKey={apiKey}
+  suggestEndpoint={suggestEndpoint}
+  resultKey={resultKey}
   resultPage={true}
   searchParameters={searchParameters}
 />
@@ -145,7 +148,7 @@ interface Paging {
 }
 
 export default function SearchPage() {
-  const { apiEndpoint, apiKey, searchParameters } = usePluginData('@quasiris/docusaurus-qsc-search') as any;
+  const { apiEndpoint, resultKey, searchParameters } = usePluginData('@quasiris/docusaurus-qsc-search') as any;
   const location = useLocation();
   const history = useHistory();
   const [query, setQuery] = useState('');
@@ -170,7 +173,7 @@ export default function SearchPage() {
         const { results, facets, paging } = await fetchResults(
           apiEndpoint,
           searchParameters,
-          apiKey,
+          resultKey,
           queryParam,
           pageParam,
           filterParams
@@ -352,7 +355,7 @@ export default function SearchPage() {
 async function fetchResults(
   apiEndpoint: string,
   searchParameters: {},
-  apiKey: string,
+  resultKey: string,
   query: string,
   page: number,
   filters: string[]
@@ -371,16 +374,16 @@ async function fetchResults(
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
     const data = await response.json();
-    const pagingData = data.result[apiKey].paging || {};
+    const pagingData = data.result[resultKey].paging || {};
     
     return {
-      results: data.result[apiKey].documents?.map(item => ({
+      results: data.result[resultKey].documents?.map(item => ({
         id: item.document?.id,
         title: item.document?.title,
         url: item.document?.url,
         excerpt: item.document?.description,
       })) || [],
-      facets: data.result[apiKey].facets || [],
+      facets: data.result[resultKey].facets || [],
       paging: {
         pageCount: pagingData.pageCount || 1,
         currentPage: pagingData.currentPage || 1,

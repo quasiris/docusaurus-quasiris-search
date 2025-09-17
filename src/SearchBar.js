@@ -5,184 +5,150 @@ import { useDebounce } from 'use-debounce';
 import styles from './custom.module.css';
 import ExecutionEnvironment from '@docusaurus/ExecutionEnvironment';
 
-export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {},resultPage=false }) {
+export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, searchParameters = {},resultPage=false }) {
   const [query, setQuery] = useState('');
   const [debouncedQuery] = useDebounce(query, 300);
-  const [results, setResults] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
   const [isResultsVisible, setIsResultsVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchContainerRef = useRef(null);
   const resultsListRef = useRef(null);
   const [inputFocused, setInputFocused] = useState(false);
-  const [initializedFromURL, setInitializedFromURL] = useState(false);
-  const isSearchRoute = ExecutionEnvironment.canUseDOM 
-    ? window.location.pathname === '/search'
-    : false;
-  useEffect(() => {
-    // Get initial query from URL when component mounts
-    if (ExecutionEnvironment.canUseDOM) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const initialQuery = urlParams.get('query') || '';
-      
-      if (initialQuery) {
-        setQuery(initialQuery);
-        setInitializedFromURL(true);
-      }
-    }
-  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        searchContainerRef.current &&
-        !searchContainerRef.current.contains(event.target)
-      ) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
         setIsResultsVisible(false);
         setSelectedIndex(-1);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
-    if (isSearchRoute && initializedFromURL) {
-      setInitializedFromURL(false); 
-      return;
-    }
     if (debouncedQuery.trim().length > 1) {
-      const fetchResults = async () => {
+      const fetchSuggestions = async () => {
         try {
-          const params = new URLSearchParams({
-            q: debouncedQuery,
-            ...searchParameters,
-          });
-          const response = await fetch(`${apiEndpoint}?${params.toString()}`);
+          const params = new URLSearchParams({ q: debouncedQuery, ...searchParameters });
+          const response = await fetch(`${suggestEndpoint}?${params.toString()}`);
           const data = await response.json();
-          const newResults = data.result[apiKey].documents || [];
-          setResults(newResults);
-          setSelectedIndex(newResults.length > 0 ? 0 : -1);
-          setIsResultsVisible(inputFocused && newResults.length > 0);
+          const newSuggestions = Array.isArray(data) ? data : [];
+          setSuggestions(newSuggestions);
+          setSelectedIndex(-1); // Always reset to -1 when suggestions change
+          setIsResultsVisible(inputFocused && newSuggestions.length > 0);
         } catch (error) {
+          console.error('Error fetching suggestions:', error);
           setIsResultsVisible(false);
         }
       };
-
-      fetchResults();
+      fetchSuggestions();
     } else {
-      setResults([]);
+      setSuggestions([]);
       setIsResultsVisible(false);
       setSelectedIndex(-1);
     }
-  }, [debouncedQuery, apiEndpoint, searchParameters, inputFocused, isSearchRoute, initializedFromURL]);
+  }, [debouncedQuery, suggestEndpoint, searchParameters, inputFocused]);
 
   useEffect(() => {
     if (selectedIndex >= 0 && resultsListRef.current) {
       const items = resultsListRef.current.children;
       if (items && items[selectedIndex]) {
-        items[selectedIndex].scrollIntoView({
-          behavior: 'auto',
-          block: 'nearest',
-        });
+        items[selectedIndex].scrollIntoView({ behavior: 'auto', block: 'nearest' });
       }
     }
   }, [selectedIndex]);
 
   const handleInputFocus = () => {
-    if (initializedFromURL) setInitializedFromURL(false);
     setInputFocused(true);
-    if (results.length > 0) setIsResultsVisible(true);
-  };
-  const handleSearch = (e) => {
-    if (initializedFromURL) setInitializedFromURL(false);
-    setQuery(e.target.value);
+    if (suggestions.length > 0) setIsResultsVisible(true);
   };
 
-  const handleRedirect = (link) => {
+  const handleSearch = (e) => setQuery(e.target.value);
+
+  const handleRedirect = (url) => {
     if (ExecutionEnvironment.canUseDOM) {
-      window.location.href = link;
-    }
-  }; 
-  const handleRedirectToSearchResultPage = (query) => {
-    if (ExecutionEnvironment.canUseDOM) {
-      window.location.href = `/search?query=${encodeURIComponent(query)}`;
+      window.location.href = url;
     }
   };
+
+  const handleRedirectToSearchPage = (q) => {
+    if (ExecutionEnvironment.canUseDOM) {
+      window.location.href = `/search?query=${encodeURIComponent(q)}`;
+    }
+  };
+
+  const handleSuggestionRedirect = async (suggestText) => {
+    try {
+      const params = new URLSearchParams({ q: suggestText, ...searchParameters });
+      const response = await fetch(`${apiEndpoint}?${params.toString()}`);
+      const data = await response.json();
+      const documents = data?.result?.[resultKey]?.documents || [];
+      if (documents.length > 0) {
+        handleRedirect(documents[0].document.url);
+      } else {
+        handleRedirectToSearchPage(suggestText);
+      }
+    } catch (error) {
+      console.error('Error fetching document url for suggestion:', error);
+      handleRedirectToSearchPage(suggestText);
+    }
+  };
+
   const highlightMatches = (text) => {
     if (!query.trim()) return text;
+    const lowerText = text.toLowerCase();
+    const lowerQuery = query.toLowerCase();
 
-    // Escape special regex characters and split query into terms
-    const terms = query
-      .trim()
-      .split(/\s+/)
-      .map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-      .filter(term => term.length > 0);
-
-    if (terms.length === 0) return text;
-
-    // Create regex pattern for matching any term
-    const regex = new RegExp(`(${terms.join('|')})`, 'gi');
-    const parts = text.split(regex);
-
-    return parts.map((part, index) =>
-      regex.test(part) ? (
-        <strong key={index} className={styles.highlight}>
-          {part}
-        </strong>
-      ) : (
-        part
-      )
-    );
+    if (lowerText.startsWith(lowerQuery)) {
+      const typedPart = text.substring(0, query.length);
+      const restPart = text.substring(query.length);
+      return (
+        <>
+          <span>{typedPart}</span>
+          <strong>{restPart}</strong>
+        </>
+      );
+    }
+    return text;
   };
+
   const handleSearchSubmit = () => {
-    if (query.trim()) {
-      if (resultPage) {
-        handleRedirectToSearchResultPage(query);
-      } else {
-        // Mirror the Enter key behavior for non-result pages
-        if (selectedIndex >= 0 && selectedIndex < results.length) {
-          handleRedirect(results[selectedIndex].document.url);
-        } else {
-          // If no selection but has query, go to search results page
-          handleRedirectToSearchResultPage(query);
-        }
-      }
+    if (!query.trim()) return;
+    if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+      // user selected a suggestion → resolve its first doc url
+      handleSuggestionRedirect(suggestions[selectedIndex].suggest);
+    } else {
+      // no suggestion selected → just go to /search page
+      handleRedirectToSearchPage(query);
     }
   };
-  const handleKeyDown = (e) => {
-    if (!isResultsVisible || results.length === 0) return;
 
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setSelectedIndex((prev) => {
-          return (prev + 1) % results.length;
-        });
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSelectedIndex((prev) => {
-          return (prev - 1 + results.length) % results.length;
-        });
-        break;
-      case 'Enter':
-        if(resultPage){
-          handleRedirectToSearchResultPage(query);
-        }else if (selectedIndex >= 0 && selectedIndex < results.length) {
-          const url = results[selectedIndex].document.url;
-          handleRedirect(url);
-        }
-        break;
-      default:
-        break;
+  const handleKeyDown = (e) => {
+    if (isResultsVisible && suggestions.length > 0) {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setSelectedIndex((prev) => (prev + 1) % suggestions.length);
+          break;
+        case 'ArrowUp':
+          e.preventDefault(); 
+          setSelectedIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+          break;
+        case 'Enter':
+          e.preventDefault();
+          handleSearchSubmit();
+          break;
+        default:
+          break;
+      }
     }
   };
 
   return (
     <div ref={searchContainerRef} className={`${styles.searchContainer} qsc-search-container`}>
       <div className={styles.inputWrapper}>
-         <input
+        <input
           type="text"
           className={`${clsx(styles.searchInput)} qsc-search-input`}
           placeholder="Search documentation..."
@@ -199,21 +165,26 @@ export default function SearchBar({ apiEndpoint, apiKey, searchParameters = {},r
           type="button"
         />
       </div>
-     
-      {isResultsVisible && results.length > 0 && (
+
+      {isResultsVisible && suggestions.length > 0 && (
         <ul ref={resultsListRef} className={styles.searchResults}>
-          {results.map((result, index) => (
+          {suggestions.map((s, index) => (
             <li
-              onClick={() => handleRedirect(result?.document.url)}
+              key={s.suggest}
+              onClick={() => handleSuggestionRedirect(s.suggest)}
               onMouseEnter={() => setSelectedIndex(index)}
-              key={result.id}
               className={clsx(styles.resultItem, {
                 [styles.selectedItem]: index === selectedIndex,
               })}
+              style={{ cursor: 'pointer' }} 
+              tabIndex={0} 
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleSuggestionRedirect(s.suggest);
+                }
+              }}
             >
-              <Link to={result?.document.url} target="_self">
-                <strong>{highlightMatches(result.document.title || result.id)}</strong>
-              </Link>
+              {highlightMatches(s.suggest)}
             </li>
           ))}
         </ul>

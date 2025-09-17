@@ -3,7 +3,7 @@ export default function (context, options) {
       name: '@quasiris/docusaurus-qsc-search',
       async contentLoaded({ actions }) {
         const { setGlobalData } = actions;
-        setGlobalData({ apiEndpoint: options.apiEndpoint, apiKey: options.apiKey, searchParameters: options?.searchParameters || {}});
+        setGlobalData({ suggestEndpoint: options.suggestEndpoint,apiEndpoint: options.apiEndpoint, resultKey: options.resultKey, searchParameters: options?.searchParameters || {}});
       },
     };
   }
