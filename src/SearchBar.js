@@ -4,8 +4,9 @@ import clsx from 'clsx';
 import { useDebounce } from 'use-debounce';
 import styles from './custom.module.css';
 import ExecutionEnvironment from '@docusaurus/ExecutionEnvironment';
+import { useLocation } from '@docusaurus/router';
 
-export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, searchParameters = {},resultPage=false }) {
+export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, searchParameters = {}, resultPage = false }) {
   const [query, setQuery] = useState('');
   const [debouncedQuery] = useDebounce(query, 300);
   const [suggestions, setSuggestions] = useState([]);
@@ -14,6 +15,17 @@ export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, sea
   const searchContainerRef = useRef(null);
   const resultsListRef = useRef(null);
   const [inputFocused, setInputFocused] = useState(false);
+  const [isSelectingSuggestion, setIsSelectingSuggestion] = useState(false);
+  
+  const location = useLocation();
+
+  useEffect(() => {
+    if (ExecutionEnvironment.canUseDOM) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlQuery = urlParams.get('query') || '';
+      setQuery(urlQuery);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -27,7 +39,7 @@ export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, sea
   }, []);
 
   useEffect(() => {
-    if (debouncedQuery.trim().length > 1) {
+    if (debouncedQuery.trim().length > 1 && !isSelectingSuggestion) {
       const fetchSuggestions = async () => {
         try {
           const params = new URLSearchParams({ q: debouncedQuery, ...searchParameters });
@@ -35,7 +47,7 @@ export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, sea
           const data = await response.json();
           const newSuggestions = Array.isArray(data) ? data : [];
           setSuggestions(newSuggestions);
-          setSelectedIndex(-1); // Always reset to -1 when suggestions change
+          setSelectedIndex(-1);
           setIsResultsVisible(inputFocused && newSuggestions.length > 0);
         } catch (error) {
           console.error('Error fetching suggestions:', error);
@@ -48,7 +60,7 @@ export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, sea
       setIsResultsVisible(false);
       setSelectedIndex(-1);
     }
-  }, [debouncedQuery, suggestEndpoint, searchParameters, inputFocused]);
+  }, [debouncedQuery, suggestEndpoint, searchParameters, inputFocused, isSelectingSuggestion]);
 
   useEffect(() => {
     if (selectedIndex >= 0 && resultsListRef.current) {
@@ -64,35 +76,30 @@ export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, sea
     if (suggestions.length > 0) setIsResultsVisible(true);
   };
 
-  const handleSearch = (e) => setQuery(e.target.value);
-
-  const handleRedirect = (url) => {
-    if (ExecutionEnvironment.canUseDOM) {
-      window.location.href = url;
-    }
+  const handleInputBlur = () => {
+    // Delay hiding results to allow for click events to complete
+    setTimeout(() => {
+      if (!isSelectingSuggestion) {
+        setInputFocused(false);
+        setIsResultsVisible(false);
+      }
+    }, 150);
   };
 
+  const handleSearch = (e) => setQuery(e.target.value);
+
   const handleRedirectToSearchPage = (q) => {
+    setIsSelectingSuggestion(true);
     if (ExecutionEnvironment.canUseDOM) {
       window.location.href = `/search?query=${encodeURIComponent(q)}`;
     }
   };
 
-  const handleSuggestionRedirect = async (suggestText) => {
-    try {
-      const params = new URLSearchParams({ q: suggestText, ...searchParameters });
-      const response = await fetch(`${apiEndpoint}?${params.toString()}`);
-      const data = await response.json();
-      const documents = data?.result?.[resultKey]?.documents || [];
-      if (documents.length > 0) {
-        handleRedirect(documents[0].document.url);
-      } else {
-        handleRedirectToSearchPage(suggestText);
-      }
-    } catch (error) {
-      console.error('Error fetching document url for suggestion:', error);
-      handleRedirectToSearchPage(suggestText);
-    }
+  const handleSuggestionClick = (suggestion) => {
+    setIsSelectingSuggestion(true);
+    setIsResultsVisible(false);
+    setSelectedIndex(-1);
+    handleRedirectToSearchPage(suggestion);
   };
 
   const highlightMatches = (text) => {
@@ -116,10 +123,8 @@ export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, sea
   const handleSearchSubmit = () => {
     if (!query.trim()) return;
     if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
-      // user selected a suggestion → resolve its first doc url
-      handleSuggestionRedirect(suggestions[selectedIndex].suggest);
+      handleSuggestionClick(suggestions[selectedIndex].suggest);
     } else {
-      // no suggestion selected → just go to /search page
       handleRedirectToSearchPage(query);
     }
   };
@@ -139,6 +144,10 @@ export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, sea
           e.preventDefault();
           handleSearchSubmit();
           break;
+        case 'Escape':
+          setIsResultsVisible(false);
+          setSelectedIndex(-1);
+          break;
         default:
           break;
       }
@@ -156,7 +165,7 @@ export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, sea
           onChange={handleSearch}
           onKeyDown={handleKeyDown}
           onFocus={handleInputFocus}
-          onBlur={() => setInputFocused(false)}
+          onBlur={handleInputBlur}
         />
         <button
           className={styles.searchIcon}
@@ -167,11 +176,16 @@ export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, sea
       </div>
 
       {isResultsVisible && suggestions.length > 0 && (
-        <ul ref={resultsListRef} className={styles.searchResults}>
+        <ul ref={resultsListRef} className={styles.searchSuggestions}>
           {suggestions.map((s, index) => (
             <li
               key={s.suggest}
-              onClick={() => handleSuggestionRedirect(s.suggest)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleRedirectToSearchPage(s.suggest);
+              }}
+              onMouseDown={() => handleSuggestionClick(s.suggest)}
               onMouseEnter={() => setSelectedIndex(index)}
               className={clsx(styles.resultItem, {
                 [styles.selectedItem]: index === selectedIndex,
@@ -180,7 +194,8 @@ export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, sea
               tabIndex={0} 
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                  handleSuggestionRedirect(s.suggest);
+                  e.preventDefault();
+                  handleSuggestionClick(s.suggest);
                 }
               }}
             >
