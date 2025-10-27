@@ -180,10 +180,10 @@ export default function SearchPage() {
   };
 
   const renderFilters = () => {
+    if (results.length === 0) return;
     return (
       <div className={styles.filtersSidebar}>
         <div className={styles.searchFilters}>
-          <h2>Filters</h2>
           {facets.map((facet) => {
             const selectedValues = facet.values.filter(value => {
               const isChecked = new URLSearchParams(location.search)
@@ -257,20 +257,16 @@ export default function SearchPage() {
   return (
      <Layout title="Search Results">
       <main className={styles.searchPage}>
-         <div className={styles.searchResultContainer}>
-          {!isLoading && query && (
-            <div className={styles.searchHeader}>
-              <h1>Search Results for "{query}"</h1>
-              <span className={styles.resultsCount}>{totalResults} results found</span>
-            </div>
-          )}
-        
+         <div className={styles.searchResultContainer}>        
           <div className={styles.searchLayout}>
             {!isLoading && renderFilters()}
 
             <div className={styles.searchContent}>
               {!isLoading && results.length > 0 && (
                 <div className={styles.resultsHeader}>
+                  {!isLoading && query && (
+                    <span className={styles.resultsCount}>{totalResults} results found for "{query}"</span>
+                  )}
                   {renderSortOptions()}
                 </div>
               )}

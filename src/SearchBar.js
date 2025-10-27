@@ -130,6 +130,12 @@ export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, sea
   };
 
   const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearchSubmit();
+      return; 
+    }
+
     if (isResultsVisible && suggestions.length > 0) {
       switch (e.key) {
         case 'ArrowDown':
@@ -137,12 +143,8 @@ export default function SearchBar({ suggestEndpoint, apiEndpoint, resultKey, sea
           setSelectedIndex((prev) => (prev + 1) % suggestions.length);
           break;
         case 'ArrowUp':
-          e.preventDefault(); 
-          setSelectedIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
-          break;
-        case 'Enter':
           e.preventDefault();
-          handleSearchSubmit();
+          setSelectedIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
           break;
         case 'Escape':
           setIsResultsVisible(false);
